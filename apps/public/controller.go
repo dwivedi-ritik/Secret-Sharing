@@ -21,8 +21,6 @@ func AddMessageController(w http.ResponseWriter, r *http.Request) {
 	}
 	messageService.AddMessage(&message)
 
-	w.WriteHeader(http.StatusCreated)
-
 	serverResponse := struct {
 		UniqueId uint32
 	}{UniqueId: message.UniqueIdentifier}
@@ -32,6 +30,8 @@ func AddMessageController(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	w.Header().Add("content-type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonData)
 }
 
@@ -39,6 +39,8 @@ func GetMessageController(w http.ResponseWriter, r *http.Request) {
 	messageService := MessageService{DB: models.DB}
 
 	queryId := r.URL.Query().Get("id")
+	expired := r.URL.Query().Get("expired")
+
 	w.Header().Add("content-type", "application/json")
 
 	if len(queryId) != 0 {
@@ -48,17 +50,16 @@ func GetMessageController(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		message, gormError := messageService.GetMessageById(uint32(queryIdint))
-		_, err = message.IsMessageExpired()
+		message, err := messageService.GetMessageById(uint32(queryIdint))
+
 		if err != nil {
 			MessageServiceErrorHandler(err, w, r)
 			return
 		}
-		if gormError != nil {
-			MessageServiceErrorHandler(gormError, w, r)
-			return
-		}
 
+		if len(expired) != 0 && expired == "true" {
+			messageService.ExpireUniqueIds(uint32(queryIdint))
+		}
 		jsonData, err := json.Marshal(message)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

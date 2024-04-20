@@ -19,9 +19,9 @@ func (messageService *MessageService) AddMessage(message *models.Message) *model
 
 	id := messageService.DB.Create(&message)
 
-	models.RedisAlternative[uint32(uniqueId.(uint32))] = int64(message.Id) //type asseration
+	models.RedisAlternative[uint32(uniqueId.(uint32))] = uint64(message.Id) //type asseration
 
-	messageService.DB.Model(&models.UniqueIdsDeque).Where("identity = ?", uniqueId).Update("available", false).Update("queued", false)
+	messageService.DB.Model(&models.UniqueId{}).Where("identity = ?", uniqueId).Update("available", false).Update("queued", false)
 
 	if id.Error != nil {
 		log.Fatal(id.Error)
@@ -44,12 +44,18 @@ func (messageService *MessageService) GetMessageById(identity uint32) (models.Me
 	if err != nil {
 		return message, err
 	}
+	_, err = message.IsMessageExpired()
 
-	messageService.DB.Model(&models.UniqueIdsDeque).Where("identity = ?", identity).Update("available", true).Update("queued", true)
-
-	models.RedisAlternative[identity] = 0
-
-	models.UniqueIdsDeque.AddRear(identity)
+	if err != nil {
+		messageService.ExpireUniqueIds(identity)
+		return message, err
+	}
 
 	return message, nil
+}
+
+func (messageService *MessageService) ExpireUniqueIds(identity uint32) {
+	messageService.DB.Model(&models.UniqueId{}).Where("identity = ?", identity).Update("available", true).Update("queued", true)
+	models.RedisAlternative[identity] = 0
+	models.UniqueIdsDeque.AddRear(identity)
 }
