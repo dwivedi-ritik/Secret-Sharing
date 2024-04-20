@@ -7,10 +7,12 @@ import (
 	"strconv"
 
 	"github.com/dwivedi-ritik/text-share-be/models"
+	"gorm.io/gorm"
 )
 
 func AddMessageController(w http.ResponseWriter, r *http.Request) {
-	messageService := MessageService{DB: models.DB}
+	DB := r.Context().Value("DB")
+	messageService := MessageService{DB: DB.(*gorm.DB)}
 	var message models.Message
 	json.NewDecoder(r.Body).Decode(&message)
 
@@ -22,7 +24,7 @@ func AddMessageController(w http.ResponseWriter, r *http.Request) {
 	messageService.AddMessage(&message)
 
 	serverResponse := struct {
-		UniqueId uint32
+		UniqueId uint32 `json:"uniqueId"`
 	}{UniqueId: message.UniqueIdentifier}
 
 	jsonData, err := json.Marshal(serverResponse)
@@ -36,7 +38,8 @@ func AddMessageController(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetMessageController(w http.ResponseWriter, r *http.Request) {
-	messageService := MessageService{DB: models.DB}
+	DB := r.Context().Value("DB")
+	messageService := MessageService{DB: DB.(*gorm.DB)}
 
 	queryId := r.URL.Query().Get("id")
 	expired := r.URL.Query().Get("expired")

@@ -3,6 +3,7 @@ package public
 import (
 	"log"
 
+	"github.com/dwivedi-ritik/text-share-be/lib"
 	"github.com/dwivedi-ritik/text-share-be/models"
 	"gorm.io/gorm"
 )
@@ -13,13 +14,13 @@ type MessageService struct {
 
 func (messageService *MessageService) AddMessage(message *models.Message) *models.Message {
 
-	uniqueId := models.UniqueIdsDeque.RemoveFront()
+	uniqueId := lib.UniqueIdsDeque.RemoveFront()
 
 	message.UniqueIdentifier = uniqueId.(uint32) //type assertion
 
 	id := messageService.DB.Create(&message)
 
-	models.RedisAlternative[uint32(uniqueId.(uint32))] = uint64(message.Id) //type asseration
+	lib.RedisAlternative[uint32(uniqueId.(uint32))] = uint64(message.Id) //type asseration
 
 	messageService.DB.Model(&models.UniqueId{}).Where("identity = ?", uniqueId).Update("available", false).Update("queued", false)
 
@@ -39,7 +40,7 @@ func (messageService *MessageService) GetAllMessage() []models.Message {
 func (messageService *MessageService) GetMessageById(identity uint32) (models.Message, error) {
 	var message models.Message
 
-	messageId := models.RedisAlternative[identity]
+	messageId := lib.RedisAlternative[identity]
 	err := messageService.DB.First(&message, messageId).Error
 	if err != nil {
 		return message, err
@@ -56,6 +57,6 @@ func (messageService *MessageService) GetMessageById(identity uint32) (models.Me
 
 func (messageService *MessageService) ExpireUniqueIds(identity uint32) {
 	messageService.DB.Model(&models.UniqueId{}).Where("identity = ?", identity).Update("available", true).Update("queued", true)
-	models.RedisAlternative[identity] = 0
-	models.UniqueIdsDeque.AddRear(identity)
+	lib.RedisAlternative[identity] = 0
+	lib.UniqueIdsDeque.AddRear(identity)
 }
