@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dwivedi-ritik/text-share-be/apps/auth"
+	"github.com/dwivedi-ritik/text-share-be/apps/private"
 	"github.com/dwivedi-ritik/text-share-be/apps/public"
 	"github.com/dwivedi-ritik/text-share-be/middleware"
 	"github.com/dwivedi-ritik/text-share-be/models"
@@ -44,5 +45,7 @@ func CreateServer() *http.ServeMux {
 	mainRouter := http.NewServeMux()
 	mainRouter.Handle("/api/public/", dBContextMiddleware(middleware.Logger((public.PublicRouter("/api/public/")))))
 	mainRouter.Handle("/api/user/", dBContextMiddleware(middleware.Logger((auth.UserRouter("/api/user/")))))
+	mainRouter.Handle("/api/private/", dBContextMiddleware(middleware.Logger(private.PrivateRouter("/api/private/"))))
+
 	return mainRouter
 }

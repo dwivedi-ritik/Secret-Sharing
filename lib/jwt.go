@@ -54,3 +54,15 @@ func ValidateToken(token string) bool {
 
 	return tkn.Valid
 }
+
+// Warning it doesn't validate the token validation
+func GetUnverifiedClaims(token string) (Claims, error) {
+	parser := jwt.NewParser()
+	jwtToken, _, err := parser.ParseUnverified(token, &Claims{})
+	if err != nil {
+		return Claims{}, err
+	}
+	claims := jwtToken.Claims.(*Claims)
+
+	return *claims, nil
+}

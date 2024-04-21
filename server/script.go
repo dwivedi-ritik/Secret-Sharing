@@ -58,11 +58,11 @@ func SyncUpUniqueIds(db *gorm.DB) {
 		var message models.Message
 		err := db.Model(&message).Where("unique_identifier = ?", uniqueId.Identity).First(&message).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			slog.Info("Message", "Id", uniqueId, "Lost, Updating map value to", 0)
+			slog.Info("Message", "Id", uniqueId.Identity, "Lost, Updating map value to", 0)
 			lib.RedisAlternative[uniqueId.Identity] = 0
 			missed++
 		} else {
-			slog.Info("Message", "Id", uniqueId, "Found, Updating map value", message.Id)
+			slog.Info("Message", "Id", uniqueId.Identity, "Found, Updating map value", message.Id)
 			lib.RedisAlternative[uniqueId.Identity] = message.Id
 			updated++
 		}
