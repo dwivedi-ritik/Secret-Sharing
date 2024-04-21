@@ -16,8 +16,8 @@ type Message struct {
 	Content          string `gorm:"not null"`
 	Encrypted        bool   `gorm:"default:false"`
 	EncryptedType    string
-	Duration         int64 `gorm:"default:1800000"`
-	CreatedBy        uint64
+	Duration         int64     `gorm:"default:1800000"`
+	CreatedBy        uint64    `gorm:"default:null"`
 	UniqueIdentifier uint32    `gorm:"not null"`
 	Expired          bool      `gorm:"default:false"`
 	CreatedAt        time.Time `gorm:"default:CURRENT_TIMESTAMP"`
