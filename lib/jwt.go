@@ -55,7 +55,7 @@ func ValidateToken(token string) bool {
 	return tkn.Valid
 }
 
-// Warning it doesn't validate the token validation
+// Warning it doesn't validate the token expiration
 func GetUnverifiedClaims(token string) (Claims, error) {
 	parser := jwt.NewParser()
 	jwtToken, _, err := parser.ParseUnverified(token, &Claims{})
