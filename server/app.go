@@ -26,7 +26,7 @@ func initializeDB() *gorm.DB {
 	}
 	slog.Info("DB Connection Established")
 
-	db.AutoMigrate(&models.Message{}, &models.UniqueId{}, &models.User{})
+	db.AutoMigrate(&models.Message{}, &models.UniqueId{}, &models.User{}, &models.Encryption{})
 	SyncUpUniqueIds(db)
 
 	return db

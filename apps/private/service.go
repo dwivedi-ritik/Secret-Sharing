@@ -1,10 +1,13 @@
 package private
 
 import (
+	"encoding/hex"
 	"log/slog"
 	"net/http"
 	"strconv"
 
+	"github.com/dwivedi-ritik/text-share-be/apps/public"
+	"github.com/dwivedi-ritik/text-share-be/lib"
 	"github.com/dwivedi-ritik/text-share-be/models"
 	"gorm.io/gorm"
 )
@@ -56,6 +59,41 @@ func (privateService *PrivateService) GetUserInfo(user *models.User) (UserDto, e
 	return UserDto{Username: user.Username, Email: user.Email}, nil
 }
 
-func (privateService *PrivateService) GetMessageById(messageId uint32) {
+func (privateService *PrivateService) GetUserEncryptionByUserId(id uint64) (*models.User, error) {
+	var user models.User
+	err := privateService.DB.Preload("Encryption").Find(&user, id).Error
+	if err != nil {
+		return &user, err
+	}
+
+	return &user, nil
+
+}
+
+func (privateService *PrivateService) AddEncryptionKeysOfUser(rsaEncryption *lib.RSAEncryption, user *models.User) error {
+
+	encryptionKeyRecord := models.Encryption{
+		PrivateKey: hex.EncodeToString(rsaEncryption.Keys.PrivateKey),
+		PublicKey:  hex.EncodeToString(rsaEncryption.Keys.PublicKey),
+		CreatedBy:  user.Id,
+	}
+
+	rec := privateService.DB.Create(&encryptionKeyRecord)
+	if rec.Error != nil {
+		return rec.Error
+	}
+
+	return nil
+}
+
+func (privateService *PrivateService) AddEncryptedMessage(messageCipher string, createdBy uint64, encryptionType string) *models.Message {
+	encryptedMessage := models.Message{
+		Content:       messageCipher,
+		Encrypted:     true,
+		CreatedBy:     createdBy,
+		EncryptedType: encryptionType,
+	}
+	messageService := public.MessageService{DB: privateService.DB}
+	return messageService.AddMessage(&encryptedMessage)
 
 }
