@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dwivedi-ritik/text-share-be/apps/auth"
+	"github.com/dwivedi-ritik/text-share-be/apps/background_process"
 	"github.com/dwivedi-ritik/text-share-be/apps/private"
 	"github.com/dwivedi-ritik/text-share-be/apps/public"
 	"github.com/dwivedi-ritik/text-share-be/middleware"
@@ -46,6 +47,6 @@ func CreateServer() *http.ServeMux {
 	mainRouter.Handle("/api/public/", dBContextMiddleware(middleware.Logger((public.PublicRouter("/api/public/")))))
 	mainRouter.Handle("/api/user/", dBContextMiddleware(middleware.Logger((auth.UserRouter("/api/user/")))))
 	mainRouter.Handle("/api/private/", dBContextMiddleware(middleware.Logger(private.PrivateRouter("/api/private/"))))
-
+	mainRouter.Handle("/api/process/", dBContextMiddleware(middleware.Logger(background_process.BackgroundProcessRouter("/api/process/"))))
 	return mainRouter
 }
