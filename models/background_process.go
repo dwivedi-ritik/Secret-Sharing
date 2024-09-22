@@ -48,7 +48,7 @@ func (processService *ProcessService) EndProcess() error {
 	db := processService.DB
 	process := processService.Process
 
-	err := db.Find(process, process.Id).Update("status", COMPLETED).Update("endedat", time.Now()).Error
+	err := db.Find(process, process.Id).Update("status", COMPLETED).Update("enddate", time.Now()).Error
 	return err
 }
 
@@ -56,6 +56,6 @@ func (processService *ProcessService) MarkFailed(processId string) error {
 	db := processService.DB
 	process := processService.Process
 
-	err := db.Find(process, process.Id).Update("status", FAILED).Update("endedat", time.Now()).Error
+	err := db.Find(process, process.Id).Update("status", FAILED).Update("enddate", time.Now()).Error
 	return err
 }

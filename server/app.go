@@ -12,11 +12,21 @@ import (
 	"github.com/dwivedi-ritik/text-share-be/apps/public"
 	"github.com/dwivedi-ritik/text-share-be/middleware"
 	"github.com/dwivedi-ritik/text-share-be/models"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
+var RedisClient *redis.Client
+
+func initializeRedisCache() *redis.Client {
+	return redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+}
 
 func initializeDB() *gorm.DB {
 	dbUrl := "postgres://localhost:5432/textshare"
@@ -29,7 +39,6 @@ func initializeDB() *gorm.DB {
 
 	db.AutoMigrate(&models.Message{}, &models.UniqueId{}, &models.User{}, &models.Encryption{})
 	SyncUpUniqueIds(db)
-
 	return db
 
 }
@@ -43,6 +52,12 @@ func dBContextMiddleware(handler http.Handler) http.Handler {
 
 func CreateServer() *http.ServeMux {
 	DB = initializeDB()
+	RedisClient = initializeRedisCache()
+	ctx := context.Background()
+	err := RedisClient.Set(ctx, "Hello", "World", 0).Err()
+	if err != nil {
+		panic(err)
+	}
 	mainRouter := http.NewServeMux()
 	mainRouter.Handle("/api/public/", dBContextMiddleware(middleware.Logger((public.PublicRouter("/api/public/")))))
 	mainRouter.Handle("/api/user/", dBContextMiddleware(middleware.Logger((auth.UserRouter("/api/user/")))))
