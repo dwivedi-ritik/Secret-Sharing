@@ -2,12 +2,20 @@ package public
 
 import (
 	"net/http"
+
+	"github.com/dwivedi-ritik/text-share-be/globals"
 )
 
-// Register to register the controller with corresponding routes
 func PublicRouter(pathPrefix string) *http.ServeMux {
 	publicRouter := http.NewServeMux()
-	publicRouter.HandleFunc("POST "+pathPrefix+"add/message", AddMessageController)
-	publicRouter.HandleFunc("GET "+pathPrefix+"get/message", GetMessageController)
+
+	controller := PublicMessageController{
+		messageService: &MessageService{
+			redisCache: globals.RedisCache,
+			dB:         globals.DB,
+		},
+	}
+	publicRouter.HandleFunc("GET "+pathPrefix+"get/message", controller.GetMessageController)
+	publicRouter.HandleFunc("POST "+pathPrefix+"add/message", controller.AddMessageController)
 	return publicRouter
 }

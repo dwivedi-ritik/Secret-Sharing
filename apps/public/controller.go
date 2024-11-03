@@ -7,13 +7,16 @@ import (
 	"strconv"
 
 	"github.com/dwivedi-ritik/text-share-be/models"
-	"gorm.io/gorm"
 )
 
-func AddMessageController(w http.ResponseWriter, r *http.Request) {
-	DB := r.Context().Value("DB")
-	messageService := MessageService{DB: DB.(*gorm.DB)}
+type PublicMessageController struct {
+	messageService *MessageService
+}
+
+func (messageController *PublicMessageController) AddMessageController(w http.ResponseWriter, r *http.Request) {
+	messageService := messageController.messageService
 	var message models.Message
+
 	json.NewDecoder(r.Body).Decode(&message)
 
 	_, err := message.ValidateModel()
@@ -22,13 +25,11 @@ func AddMessageController(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	messageService.AddMessage(&message)
-
 	serverResponse := struct {
 		UniqueId uint32 `json:"uniqueId"`
 	}{UniqueId: message.UniqueIdentifier}
 
 	jsonData, err := json.Marshal(serverResponse)
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,46 +38,42 @@ func AddMessageController(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func GetMessageController(w http.ResponseWriter, r *http.Request) {
-	DB := r.Context().Value("DB")
-	messageService := MessageService{DB: DB.(*gorm.DB)}
-
+func (messageController *PublicMessageController) GetMessageController(w http.ResponseWriter, r *http.Request) {
+	messageService := messageController.messageService
 	queryId := r.URL.Query().Get("id")
 	expired := r.URL.Query().Get("expired")
+	expireMessage := expired == "true"
 
-	w.Header().Add("content-type", "application/json")
-
-	if len(queryId) != 0 {
-		queryIdint, err := strconv.Atoi(queryId)
-		if err != nil {
-			MessageServiceErrorHandler(ErrIdParamIsMissing, w, r)
-			return
-		}
-
-		message, err := messageService.GetMessageById(uint32(queryIdint))
-
-		if err != nil {
-			MessageServiceErrorHandler(err, w, r)
-			return
-		}
-
-		if len(expired) != 0 && expired == "true" {
-			messageService.ExpireUniqueIds(uint32(queryIdint))
-		}
-		jsonData, err := json.Marshal(message)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Fatal(err)
-		}
-		w.Write(jsonData)
+	_, err := strconv.Atoi(queryId)
+	if err != nil {
+		messageController.renderErrorResponse(w, http.StatusBadRequest, nil)
 		return
 	}
-	messages := messageService.GetAllMessage()
-	jsonData, err := json.Marshal(messages)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal(err)
-	}
-	w.Write(jsonData)
 
+	message, err := messageService.GetMessageById(queryId, expireMessage)
+
+	if err != nil {
+		messageController.renderErrorResponse(w, http.StatusBadRequest, ErrInvalidUniqueId)
+		return
+	}
+	jsonData, err := json.Marshal(message)
+	if err != nil {
+		messageController.renderErrorResponse(w, http.StatusBadRequest, ErrInvalidUniqueId)
+		return
+	}
+	messageController.renderResponse(w, &jsonData, http.StatusOK)
+
+}
+
+func (messageController *PublicMessageController) renderResponse(w http.ResponseWriter, data *[]byte, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	if status != 0 {
+		w.WriteHeader(status)
+	}
+	w.Write(*data)
+}
+
+func (messageController *PublicMessageController) renderErrorResponse(w http.ResponseWriter, status int, err error) {
+	w.WriteHeader(status)
+	w.Write([]byte(err.Error()))
 }

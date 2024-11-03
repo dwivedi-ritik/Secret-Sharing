@@ -2,7 +2,6 @@ package lib
 
 import (
 	"context"
-	"errors"
 
 	"github.com/dwivedi-ritik/text-share-be/types"
 	"github.com/redis/go-redis/v9"
@@ -20,23 +19,17 @@ func (clt *RedisCache) AddValue(message *types.MessageCache) {
 	}
 }
 
-func (clt *RedisCache) FetchValue(message *types.MessageCache) error {
+func (clt *RedisCache) FetchValue(message *types.MessageCache) string {
 	cmd := clt.Client.Get(context.Background(), message.Key)
-
 	if cmd.Err() != nil {
-		if errors.Is(cmd.Err(), redis.Nil) {
-			return types.ErrMessageCacheNotFound
-		} else {
-			panic(cmd.Err())
-		}
-
+		return ""
 	}
-	message.Value = cmd.Val()
 
-	return nil
+	return cmd.Val()
 }
+
 func (clt *RedisCache) UpdateValue(message *types.MessageCache) error {
-	if !clt.isExists(message.Key) {
+	if !clt.IsExists(message.Key) {
 		return types.ErrKeyNotFound
 	}
 	clt.AddValue(message)
@@ -48,8 +41,7 @@ func (clt *RedisCache) DeleteValue(message *types.MessageCache) bool {
 
 	return val == 1 || false
 }
-
-func (cln *RedisCache) isExists(key string) bool {
+func (cln *RedisCache) IsExists(key string) bool {
 	val := cln.Client.Exists(context.Background(), key).Val()
 	return val == 1 || false
 }

@@ -10,6 +10,8 @@ import (
 	"github.com/dwivedi-ritik/text-share-be/apps/background_process"
 	"github.com/dwivedi-ritik/text-share-be/apps/private"
 	"github.com/dwivedi-ritik/text-share-be/apps/public"
+	"github.com/dwivedi-ritik/text-share-be/globals"
+	"github.com/dwivedi-ritik/text-share-be/lib"
 	"github.com/dwivedi-ritik/text-share-be/middleware"
 	"github.com/dwivedi-ritik/text-share-be/models"
 	"github.com/redis/go-redis/v9"
@@ -17,11 +19,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
-var RedisClient *redis.Client
-
-func initializeRedisCache() *redis.Client {
-	return redis.NewClient(&redis.Options{
+func initializeRedisCache() *lib.RedisCache {
+	return lib.NewRedisClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
@@ -38,30 +37,29 @@ func initializeDB() *gorm.DB {
 	slog.Info("DB Connection Established")
 
 	db.AutoMigrate(&models.Message{}, &models.UniqueId{}, &models.User{}, &models.Encryption{})
-	SyncUpUniqueIds(db)
 	return db
 
 }
 
 func dBContextMiddleware(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), "DB", DB)
+		ctx := context.WithValue(r.Context(), "DB", globals.DB)
 		handler.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func CreateServer() *http.ServeMux {
-	DB = initializeDB()
-	RedisClient = initializeRedisCache()
-	ctx := context.Background()
-	err := RedisClient.Set(ctx, "Hello", "World", 0).Err()
-	if err != nil {
-		panic(err)
-	}
+	// TODO Scale to dependency injection
+	globals.DB = initializeDB()
+	globals.RedisCache = initializeRedisCache()
+
 	mainRouter := http.NewServeMux()
+
 	mainRouter.Handle("/api/public/", dBContextMiddleware(middleware.Logger((public.PublicRouter("/api/public/")))))
 	mainRouter.Handle("/api/user/", dBContextMiddleware(middleware.Logger((auth.UserRouter("/api/user/")))))
+
 	mainRouter.Handle("/api/private/", dBContextMiddleware(middleware.Logger(private.PrivateRouter("/api/private/"))))
 	mainRouter.Handle("/api/process/", dBContextMiddleware(middleware.Logger(background_process.BackgroundProcessRouter("/api/process/"))))
+
 	return mainRouter
 }
