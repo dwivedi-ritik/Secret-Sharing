@@ -16,7 +16,6 @@ type MessageService struct {
 
 func (messageService *MessageService) AddMessage(message *models.Message) bool {
 
-	message.Save()
 	digitToMap := 0
 	for {
 		newDigit := lib.RandomDigitGenerate(1000, 9999)
@@ -27,6 +26,8 @@ func (messageService *MessageService) AddMessage(message *models.Message) bool {
 		}
 	}
 	message.UniqueIdentifier = uint32(digitToMap)
+	message.Save()
+
 	messageCache := types.MessageCache{
 		Key:   strconv.Itoa(digitToMap),
 		Value: message.Id,
@@ -43,7 +44,7 @@ func (messageService *MessageService) GetMessageById(identity string, expire boo
 		return message, ErrInvalidUniqueId
 	}
 	actualId := messageService.redisCache.FetchValue(&types.MessageCache{Key: identity})
-	err := messageService.dB.First(&message, actualId).Error
+	err := messageService.dB.Where("expired = ?", false).First(&message, actualId).Error
 
 	if err != nil {
 		return message, err
