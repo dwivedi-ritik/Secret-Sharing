@@ -3,6 +3,8 @@ package models
 import (
 	"errors"
 	"time"
+
+	"github.com/dwivedi-ritik/text-share-be/globals"
 )
 
 var (
@@ -40,4 +42,9 @@ func (m *Message) IsMessageExpired() (bool, error) {
 	return false, nil
 }
 
-//TBD Users
+func (m *Message) Save() bool {
+	db := globals.DB
+	id := db.Create(m)
+
+	return id != nil
+}

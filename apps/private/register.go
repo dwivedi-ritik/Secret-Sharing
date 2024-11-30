@@ -11,7 +11,7 @@ func PrivateRouter(pathPrefix string) *http.ServeMux {
 	//This will be background job
 	privateRouter.HandleFunc("POST "+pathPrefix+"generateKeys", Authorization(GenerateUserEncryptionKeyController))
 	privateRouter.HandleFunc("POST "+pathPrefix+"message/encrypt", Authorization(EncryptMessageController))
-	privateRouter.HandleFunc("POST "+pathPrefix+"message/decrypt", Authorization(DecryptMessageController))
+	// privateRouter.HandleFunc("POST "+pathPrefix+"message/decrypt", Authorization(DecryptMessageController))
 
 	return privateRouter
 }

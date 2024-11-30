@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dwivedi-ritik/text-share-be/apps/public"
 	"github.com/dwivedi-ritik/text-share-be/lib"
 	"github.com/dwivedi-ritik/text-share-be/models"
 	"gorm.io/gorm"
@@ -93,7 +92,6 @@ func (privateService *PrivateService) AddEncryptedMessage(messageCipher string, 
 		CreatedBy:     createdBy,
 		EncryptedType: encryptionType,
 	}
-	messageService := public.MessageService{DB: privateService.DB}
-	return messageService.AddMessage(&encryptedMessage)
-
+	encryptedMessage.Save()
+	return &encryptedMessage
 }
